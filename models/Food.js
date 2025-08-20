@@ -2,7 +2,6 @@ import mongoose from "mongoose";
 const Schema = mongoose.Schema;
 const FoodSchema = new Schema(
   {
-    id: { type: String, required: true, unique: true },
     name: { type: String, required: true },
     calories: { type: Number, required: true },
     nutrients: {
@@ -16,7 +15,7 @@ const FoodSchema = new Schema(
   { timestamps: true }
 );
 
-foodSchema.methods.toJSON = function () {
+FoodSchema.methods.toJSON = function () {
   const obj = this._doc;
   delete obj.__v;
   delete obj.updatedAt;
