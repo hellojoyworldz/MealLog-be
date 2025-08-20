@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 const Schema = mongoose.Schema;
 const FoodSchema = new Schema(
   {
+    id: { type: String, required: true, unique: true },
     name: { type: String, required: true },
     calories: { type: Number, required: true },
     nutrients: {
