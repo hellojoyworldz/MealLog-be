@@ -4,11 +4,11 @@ const userSchema = new Schema(
   {
     id: { type: String, required: true, unique: true },
     name: { type: String, required: true },
-    age: { type: Number, required: true },
-    gender: { type: String, enum: ["male", "female"], required: true },
-    height: { type: Number, required: true },
-    weight: { type: Number, required: true },
-    goalCalories: { type: Number, required: true },
+    age: { type: Number },
+    gender: { type: String, enum: ["male", "female"] },
+    height: { type: Number },
+    weight: { type: Number },
+    goalCalories: { type: Number },
     muscleMess: { type: Number },
     bodyFat: { type: Number },
     level: { type: String, default: "customer" }, // customer, admin
@@ -16,7 +16,7 @@ const userSchema = new Schema(
   { timestamps: true }
 );
 
-UserSchema.methods.toJSON = function () {
+userSchema.methods.toJSON = function () {
   const obj = this._doc;
   delete obj.__v;
   delete obj.updatedAt;
