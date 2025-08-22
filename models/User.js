@@ -1,16 +1,21 @@
 import mongoose from "mongoose";
+import jwt from "jsonwebtoken";
+import dotenv from "dotenv";
+dotenv.config();
+
 const Schema = mongoose.Schema;
 const userSchema = new Schema(
   {
-    id: { type: String, required: true, unique: true },
+    email: { type: String, required: true, unique: true },
     name: { type: String, required: true },
     age: { type: Number },
     gender: { type: String, enum: ["male", "female"] },
     height: { type: Number },
     weight: { type: Number },
-    goalCalories: { type: Number },
     muscleMess: { type: Number },
     bodyFat: { type: Number },
+    goalWeight: { type: Number },
+    goalCalories: { type: Number },
     level: { type: String, default: "customer" }, // customer, admin
   },
   { timestamps: true }
@@ -22,6 +27,13 @@ userSchema.methods.toJSON = function () {
   delete obj.updatedAt;
   delete obj.createdAt;
   return obj;
+};
+
+userSchema.methods.generateToken = function () {
+  const token = jwt.sign({ _id: this.id }, JWT_SECRET_KEY, {
+    expiresIn: "1d",
+  });
+  return token;
 };
 
 export default mongoose.model("User", userSchema);
