@@ -54,4 +54,42 @@ userController.getUser = async (req, res) => {
   }
 };
 
+userController.updateUser = async (req, res) => {
+  try {
+    const { userId } = req;
+    const updateFields = {};
+    const allowedFields = [
+      "age",
+      "gender",
+      "height",
+      "weight",
+      "muscleMass",
+      "goalWeight",
+      "goalCalories",
+    ];
+
+    // body에 들어온 값만 updateFields에 추가
+    allowedFields.forEach((field) => {
+      if (req.body[field] !== undefined) {
+        updateFields[field] = req.body[field];
+      }
+    });
+
+    //유저 정보 업데이트
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { $set: updateFields },
+      { new: true } //업데이트된 데이터를 반환
+    );
+
+    if (!updatedUser) {
+      throw new Error("유저가 존재하지 않습니다");
+    }
+
+    return res.status(200).json({ status: "success", user: updatedUser });
+  } catch (error) {
+    return res.status(400).json({ status: "fail", error: error.message });
+  }
+};
+
 export default userController;

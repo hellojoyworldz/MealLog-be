@@ -1,7 +1,9 @@
 import User from "../models/User.js";
 import { OAuth2Client } from "google-auth-library";
+import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 dotenv.config();
+const JWT_SECRET_KEY = process.env.JWT_SECRET_KEY;
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const authController = {};
 
@@ -31,6 +33,23 @@ authController.loginWithGoogle = async (req, res) => {
     res.status(200).json({ status: "success", user, token: sessionToken });
   } catch (error) {
     res.status(400).json({ status: "fail", message: error.message });
+  }
+};
+
+authController.authenticate = (req, res, next) => {
+  try {
+    const tokenString = req.headers.authorization;
+    if (!tokenString) throw new Error("토큰이 없습니다.");
+
+    const token = tokenString.replace("Bearer ", "");
+    const payload = jwt.verify(token, JWT_SECRET_KEY);
+
+    req.userId = payload._id; // payload에서 유저 id 꺼내고
+    next(); // 인증 성공하면 다음 미들웨어
+  } catch (error) {
+    res
+      .status(401)
+      .json({ status: "fail", error: "인증 실패: " + error.message });
   }
 };
 
