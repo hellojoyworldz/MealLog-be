@@ -1,27 +1,41 @@
 import mongoose from "mongoose";
+import dotenv from "dotenv";
+dotenv.config();
+import jwt from "jsonwebtoken";
+const JWT_SECRET_KEY = process.env.JWT_SECRET_KEY;
+
 const Schema = mongoose.Schema;
 const userSchema = new Schema(
   {
-    id: { type: String, required: true, unique: true },
+    email: { type: String, required: true, unique: true },
     name: { type: String, required: true },
-    age: { type: Number, required: true },
-    gender: { type: String, enum: ["male", "female"], required: true },
-    height: { type: Number, required: true },
-    weight: { type: Number, required: true },
-    goalCalories: { type: Number, required: true },
+    age: { type: Number },
+    gender: { type: String, enum: ["male", "female"] },
+    height: { type: Number },
+    weight: { type: Number },
     muscleMess: { type: Number },
     bodyFat: { type: Number },
+    goalWeight: { type: Number },
+    goalCalories: { type: Number },
     level: { type: String, default: "customer" }, // customer, admin
   },
   { timestamps: true }
 );
 
-UserSchema.methods.toJSON = function () {
+userSchema.methods.toJSON = function () {
   const obj = this._doc;
   delete obj.__v;
   delete obj.updatedAt;
   delete obj.createdAt;
   return obj;
+};
+
+userSchema.methods.generateToken = function () {
+  const token = jwt.sign({ _id: this.id }, JWT_SECRET_KEY, {
+    //몽고db에 있는 _id 사용
+    expiresIn: "1d",
+  });
+  return token;
 };
 
 export default mongoose.model("User", userSchema);
