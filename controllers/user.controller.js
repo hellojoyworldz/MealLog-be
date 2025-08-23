@@ -79,7 +79,7 @@ userController.updateUser = async (req, res) => {
     const updatedUser = await User.findByIdAndUpdate(
       userId,
       { $set: updateFields },
-      { new: true } //업데이트된 데이터를 반환
+      { new: true, runValidators: true } // new:true 업데이트된 데이터를 반환, runValidators:true 검증을 강제함
     );
 
     if (!updatedUser) {
@@ -87,6 +87,19 @@ userController.updateUser = async (req, res) => {
     }
 
     return res.status(200).json({ status: "success", user: updatedUser });
+  } catch (error) {
+    return res.status(400).json({ status: "fail", error: error.message });
+  }
+};
+
+userController.deleteUser = async (req, res) => {
+  try {
+    const { userId } = req;
+    const deletedUser = await User.findByIdAndDelete(userId);
+    if (!deletedUser) {
+      throw new Error("유저가 존재하지 않습니다.");
+    }
+    return res.status(200).json({ status: "success" });
   } catch (error) {
     return res.status(400).json({ status: "fail", error: error.message });
   }

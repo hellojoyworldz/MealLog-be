@@ -1,7 +1,8 @@
 import mongoose from "mongoose";
-import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 dotenv.config();
+import jwt from "jsonwebtoken";
+const JWT_SECRET_KEY = process.env.JWT_SECRET_KEY;
 
 const Schema = mongoose.Schema;
 const userSchema = new Schema(

@@ -6,5 +6,6 @@ import authController from "../controllers/auth.controller.js";
 router.post("/", userController.createUser);
 router.get("/me", authController.authenticate, userController.getUser);
 router.put("/", authController.authenticate, userController.updateUser);
+router.delete("/", authController.authenticate, userController.deleteUser);
 
 export default router;

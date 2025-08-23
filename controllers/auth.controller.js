@@ -1,8 +1,8 @@
+import dotenv from "dotenv";
+dotenv.config();
 import User from "../models/User.js";
 import { OAuth2Client } from "google-auth-library";
 import jwt from "jsonwebtoken";
-import dotenv from "dotenv";
-dotenv.config();
 const JWT_SECRET_KEY = process.env.JWT_SECRET_KEY;
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const authController = {};
