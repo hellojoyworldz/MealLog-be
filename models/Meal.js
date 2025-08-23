@@ -2,9 +2,7 @@ import mongoose from "mongoose";
 const Schema = mongoose.Schema;
 const MealSchema = new Schema(
   {
-    id: { type: String, required: true, unique: true },
     userId: { type: String, required: true },
-    name: { type: String, required: true },
     date: { type: Date, required: true },
     type: {
       type: String,
