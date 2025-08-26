@@ -117,4 +117,28 @@ mealController.deleteMeal = async (req, res) => {
   }
 };
 
+mealController.loadMeals = async (req, res, next) => {
+  try {
+    const { userId } = req;
+    const { date, type } = req.query;
+
+    const query = { userId };
+    if (date) query.date = date;
+    if (type) query.type = type;
+
+    const meals = await Meal.find(query);
+
+    if (!meals.length) {
+      return res
+        .status(404)
+        .json({ status: "fail", error: "식단 기록이 없습니다." });
+    }
+
+    req.meals = meals; // 다음 미들웨어/컨트롤러에서 사용
+    next();
+  } catch (error) {
+    return res.status(400).json({ status: "fail", error: error.message });
+  }
+};
+
 export default mealController;
