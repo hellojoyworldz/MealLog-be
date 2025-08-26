@@ -9,7 +9,9 @@ app.use(cors());
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 app.use("/api", indexRouter);
-const mongoURI = process.env.LOCAL_DB_ADDRESS;
+
+const mongoURI = process.env.MONGODB_URL;
+
 mongoose.connect(mongoURI, { useNewUrlParser: true }).then(() => {
   console.log("몽구스 연결 성공");
 }).catch;

@@ -9,6 +9,7 @@ const userSchema = new Schema(
   {
     email: { type: String, required: true, unique: true },
     name: { type: String, required: true },
+    picture: { type: String },
     age: { type: Number },
     gender: { type: String, enum: ["male", "female"] },
     height: { type: Number },
@@ -18,6 +19,11 @@ const userSchema = new Schema(
     goalWeight: { type: Number },
     goalCalories: { type: Number },
     level: { type: String, default: "customer" }, // customer, admin
+    status: {
+      type: String,
+      enum: ["pending", "active"],
+      default: "pending",
+    },
   },
   { timestamps: true }
 );
