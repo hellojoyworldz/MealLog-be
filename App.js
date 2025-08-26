@@ -10,7 +10,10 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 app.use("/api", indexRouter);
 
-const mongoURI = process.env.MONGODB_URL;
+const mongoURI =
+  process.env.NODE_ENV === "production"
+    ? process.env.MONGODB_URL
+    : process.env.LOCAL_DB_ADDRESS;
 
 mongoose.connect(mongoURI, { useNewUrlParser: true }).then(() => {
   console.log("몽구스 연결 성공");
