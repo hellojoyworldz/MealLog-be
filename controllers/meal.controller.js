@@ -49,9 +49,41 @@ mealController.getMyMeal = async (req, res) => {
 
     const meals = await Meal.find(query);
 
+    // 합계 초기화
+    const totalSummary = {
+      calories: 0,
+      carbs: 0,
+      protein: 0,
+      fat: 0,
+      sugar: 0,
+      byType: {
+        breakfast: { calories: 0 },
+        lunch: { calories: 0 },
+        dinner: { calories: 0 },
+        snack: { calories: 0 },
+      },
+    };
+
+    meals.forEach((meal) => {
+      meal.foods.forEach((food) => {
+        totalSummary.calories += food.calories || 0;
+        totalSummary.carbs += food.nutrients?.carbs || 0;
+        totalSummary.protein += food.nutrients?.protein || 0;
+        totalSummary.fat += food.nutrients?.fat || 0;
+        totalSummary.sugar += food.nutrients?.sugar || 0;
+        // 타입별 칼로리 집계
+        if (meal.type && totalSummary.byType[meal.type]) {
+          totalSummary.byType[meal.type].calories += food.calories || 0;
+        }
+      });
+    });
+
     res.status(200).json({
       status: "success",
-      data: meals,
+      data: {
+        meals,
+        totals: totalSummary,
+      },
     });
   } catch (error) {
     res.status(400).json({ status: "fail", error: error.message });
@@ -114,6 +146,30 @@ mealController.deleteMeal = async (req, res) => {
     res.status(200).json({ status: "success", data: meal });
   } catch (error) {
     res.status(400).json({ status: "fail", error: error.message });
+  }
+};
+
+mealController.loadMeals = async (req, res, next) => {
+  try {
+    const { userId } = req;
+    const { date, type } = req.query;
+
+    const query = { userId };
+    if (date) query.date = date;
+    if (type) query.type = type;
+
+    const meals = await Meal.find(query);
+
+    if (!meals.length) {
+      return res
+        .status(404)
+        .json({ status: "fail", error: "식단 기록이 없습니다." });
+    }
+
+    req.meals = meals; // 다음 미들웨어/컨트롤러에서 사용
+    next();
+  } catch (error) {
+    return res.status(400).json({ status: "fail", error: error.message });
   }
 };
 

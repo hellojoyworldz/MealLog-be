@@ -8,13 +8,16 @@ userController.createUser = async (req, res) => {
       email,
       name,
       level,
-      age,
+      birthDate,
       gender,
       goalWeight,
       goalCalories,
       muscleMass,
       height,
       weight,
+      bodyFat,
+      picture,
+      status,
     } = req.body;
 
     const user = await User.findOne({ email });
@@ -25,13 +28,16 @@ userController.createUser = async (req, res) => {
       email,
       name,
       level: level ? level : "customer",
-      age,
+      birthDate,
       gender,
-      height,
-      weight,
-      muscleMass,
       goalWeight,
       goalCalories,
+      muscleMass,
+      height,
+      weight,
+      bodyFat,
+      picture,
+      status: status ? status : "pending",
     });
     await newUser.save();
 
@@ -59,13 +65,14 @@ userController.updateUser = async (req, res) => {
     const { userId } = req;
     const updateFields = {};
     const allowedFields = [
-      "age",
       "gender",
-      "height",
-      "weight",
-      "muscleMass",
       "goalWeight",
       "goalCalories",
+      "muscleMass",
+      "height",
+      "weight",
+      "bodyFat",
+      "picture",
     ];
 
     // body에 들어온 값만 updateFields에 추가
@@ -78,7 +85,7 @@ userController.updateUser = async (req, res) => {
     //유저 정보 업데이트
     const updatedUser = await User.findByIdAndUpdate(
       userId,
-      { $set: updateFields },
+      { $set: { ...updateFields, status: "active" } },
       { new: true, runValidators: true } // new:true 업데이트된 데이터를 반환, runValidators:true 검증을 강제함
     );
 
