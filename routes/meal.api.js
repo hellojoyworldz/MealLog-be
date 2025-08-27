@@ -4,7 +4,7 @@ import authController from "../controllers/auth.controller.js";
 import mealController from "../controllers/meal.controller.js";
 
 router.post("/", authController.authenticate, mealController.createMeal);
-router.get("/", authController.authenticate, mealController.getMyMeal);
+router.get("/",  mealController.getMyMeal);
 router.put("/", authController.authenticate, mealController.updateMeal);
 router.delete("/", authController.authenticate, mealController.deleteMeal);
 

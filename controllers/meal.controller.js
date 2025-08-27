@@ -40,7 +40,7 @@ mealController.createMeal = async (req, res) => {
  */
 mealController.getMyMeal = async (req, res) => {
   try {
-    const { userId } = req;
+    const userId = 1; // 실제로는 req.user.id 같은 걸로 가져오겠죠
     const { date, type } = req.query;
 
     const query = { userId };
@@ -49,9 +49,41 @@ mealController.getMyMeal = async (req, res) => {
 
     const meals = await Meal.find(query);
 
+    // 합계 초기화
+    const totalSummary = {
+      calories: 0,
+      carbs: 0,
+      protein: 0,
+      fat: 0,
+      sugar: 0,
+      byType: {
+        breakfast: { calories: 0 },
+        lunch: { calories: 0 },
+        dinner: { calories: 0 },
+        snack: { calories: 0 },
+      },
+    };
+
+    meals.forEach((meal) => {
+      meal.foods.forEach((food) => {
+        totalSummary.calories += food.calories || 0;
+        totalSummary.carbs += food.nutrients?.carbs || 0;
+        totalSummary.protein += food.nutrients?.protein || 0;
+        totalSummary.fat += food.nutrients?.fat || 0;
+        totalSummary.sugar += food.nutrients?.sugar || 0;
+        // 타입별 칼로리 집계
+        if (meal.type && totalSummary.byType[meal.type]) {
+          totalSummary.byType[meal.type].calories += food.calories || 0;
+        }
+      });
+    });
+
     res.status(200).json({
       status: "success",
-      data: meals,
+      data: {
+        meals,
+        totals: totalSummary,
+      },
     });
   } catch (error) {
     res.status(400).json({ status: "fail", error: error.message });
