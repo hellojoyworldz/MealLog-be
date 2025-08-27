@@ -10,7 +10,7 @@ const userSchema = new Schema(
     email: { type: String, required: true, unique: true },
     name: { type: String, required: true },
     picture: { type: String },
-    age: { type: Number },
+    birthDate: { type: Date },
     gender: { type: String, enum: ["male", "female"] },
     height: { type: Number },
     weight: { type: Number },

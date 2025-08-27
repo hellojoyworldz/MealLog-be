@@ -59,10 +59,10 @@ userController.updateUser = async (req, res) => {
     const { userId } = req;
     const updateFields = {};
     const allowedFields = [
-      "age",
       "gender",
       "height",
       "weight",
+      "birthDate",
       "muscleMass",
       "goalWeight",
       "goalCalories",
@@ -78,7 +78,7 @@ userController.updateUser = async (req, res) => {
     //유저 정보 업데이트
     const updatedUser = await User.findByIdAndUpdate(
       userId,
-      { $set: updateFields },
+      { $set: { ...updateFields, status: "active" } },
       { new: true, runValidators: true } // new:true 업데이트된 데이터를 반환, runValidators:true 검증을 강제함
     );
 
