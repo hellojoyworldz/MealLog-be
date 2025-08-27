@@ -9,7 +9,17 @@ mealController.createMeal = async (req, res) => {
     const { userId } = req; // 로그인 미들웨어에서 세팅된다고 가정
     const { date, type, foods, photo, memo } = req.body;
 
-    let meal = await Meal.findOne({ userId, date, type });
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    let meal = await Meal.findOne({
+      userId,
+      type,
+      date: { $gte: startOfDay, $lte: endOfDay },
+    });
 
     if (!meal) {
       meal = new Meal({
@@ -44,7 +54,15 @@ mealController.getMyMeal = async (req, res) => {
     const { date, type } = req.query;
 
     const query = { userId };
-    if (date) query.date = date;
+    if (date) {
+      const startOfDay = new Date(date);
+      startOfDay.setHours(0, 0, 0, 0);
+
+      const endOfDay = new Date(date);
+      endOfDay.setHours(23, 59, 59, 999);
+
+      query.date = { $gte: startOfDay, $lte: endOfDay };
+    }
     if (type) query.type = type;
 
     const meals = await Meal.find(query);
@@ -128,22 +146,31 @@ mealController.updateMeal = async (req, res) => {
 mealController.deleteMeal = async (req, res) => {
   try {
     const { userId } = req;
-    const { mealId, foodId } = req.params;
+    const { mealId, foodId } = req.query;
 
     const meal = await Meal.findOne({ _id: mealId, userId });
     if (!meal) {
       return res.status(404).json({ status: "fail", error: "Meal not found" });
     }
 
-    const food = meal.foods.id(foodId);
-    if (!food) {
-      return res.status(404).json({ status: "fail", error: "Food not found" });
+    if (foodId) {
+      // foodId가 있으면 meal의 food 하나만 삭제
+      const food = meal.foods.id(foodId);
+      if (!food) {
+        return res
+          .status(404)
+          .json({ status: "fail", error: "Food not found" });
+      }
+      food.deleteOne();
+      await meal.save();
+      return res.status(200).json({ status: "success", data: meal });
+    } else {
+      // foodId 없으면 meal 전체 삭제
+      await Meal.deleteOne({ _id: mealId, userId });
+      return res
+        .status(200)
+        .json({ status: "success", message: "Meal deleted" });
     }
-
-    food.deleteOne(); // 배열에서 제거
-    await meal.save();
-
-    res.status(200).json({ status: "success", data: meal });
   } catch (error) {
     res.status(400).json({ status: "fail", error: error.message });
   }
