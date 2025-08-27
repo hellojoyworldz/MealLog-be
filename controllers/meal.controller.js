@@ -40,7 +40,7 @@ mealController.createMeal = async (req, res) => {
  */
 mealController.getMyMeal = async (req, res) => {
   try {
-    const userId = 1; // 실제로는 req.user.id 같은 걸로 가져오겠죠
+    const { userId } = req;
     const { date, type } = req.query;
 
     const query = { userId };
