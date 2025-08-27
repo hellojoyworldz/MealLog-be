@@ -14,7 +14,7 @@ const userSchema = new Schema(
     gender: { type: String, enum: ["male", "female"] },
     height: { type: Number },
     weight: { type: Number },
-    muscleMess: { type: Number },
+    muscleMass: { type: Number },
     bodyFat: { type: Number },
     goalWeight: { type: Number },
     goalCalories: { type: Number },

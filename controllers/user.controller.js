@@ -8,13 +8,16 @@ userController.createUser = async (req, res) => {
       email,
       name,
       level,
-      age,
+      birthDate,
       gender,
       goalWeight,
       goalCalories,
       muscleMass,
       height,
       weight,
+      bodyFat,
+      picture,
+      status,
     } = req.body;
 
     const user = await User.findOne({ email });
@@ -25,13 +28,16 @@ userController.createUser = async (req, res) => {
       email,
       name,
       level: level ? level : "customer",
-      age,
+      birthDate,
       gender,
-      height,
-      weight,
-      muscleMass,
       goalWeight,
       goalCalories,
+      muscleMass,
+      height,
+      weight,
+      bodyFat,
+      picture,
+      status: status ? status : "pending",
     });
     await newUser.save();
 
@@ -60,12 +66,13 @@ userController.updateUser = async (req, res) => {
     const updateFields = {};
     const allowedFields = [
       "gender",
-      "height",
-      "weight",
-      "birthDate",
-      "muscleMass",
       "goalWeight",
       "goalCalories",
+      "muscleMass",
+      "height",
+      "weight",
+      "bodyFat",
+      "picture",
     ];
 
     // body에 들어온 값만 updateFields에 추가
