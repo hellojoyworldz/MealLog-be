@@ -2,47 +2,38 @@ import openai from "../utils/openai.js";
 
 const aiService = {};
 
-// 끼니별 총합 계산 + 프롬프트 생성
-function buildMealPrompt(meals, goals) {
-  let totalCalories = 0,
-    totalCarbs = 0,
-    totalProtein = 0,
-    totalFat = 0;
+// ai 호출 JSON 기반 피드백 생성
+aiService.getMealFeedback = async (meals, goals, mode = "daily") => {
+  // userId, _id 제거한 데이터를 생성하는 함수
+  // meal 객체에서 _id와 userId를 꺼내 버리고 나머지는 rest에 담음
+  const cleanMeals = meals.map(({ _id, userId, ...rest }) => ({
+    ...rest, //나머지 필드들을 복사
+    foods: rest.foods?.map(({ _id, ...foodRest }) => foodRest) || [], // foods배열의 각 객체의 _id제거
+  }));
 
-  const mealSummaries = meals.map((meal, idx) => {
-    let mealCalories = 0,
-      mealCarbs = 0,
-      mealProtein = 0,
-      mealFat = 0;
-    meal.foods.forEach((food) => {
-      mealCalories += food.calories || 0;
-      mealCarbs += food.nutrients?.carbs || 0;
-      mealProtein += food.nutrients?.protein || 0;
-      mealFat += food.nutrients?.fat || 0;
-    });
-    totalCalories += mealCalories;
-    totalCarbs += mealCarbs;
-    totalProtein += mealProtein;
-    totalFat += mealFat;
+  const { _id: goalsId, userId: goalsUserId, ...cleanGoals } = goals || {};
 
-    return `${idx + 1}. ${
-      meal.name
-    }: 칼로리 ${mealCalories}kcal, 탄수화물 ${mealCarbs}g, 단백질 ${mealProtein}g, 지방 ${mealFat}g`;
-  });
+  const payload = {
+    meals: cleanMeals,
+    goals: cleanGoals,
+  };
 
-  return `
-유저의 하루 식단 요약:
-${mealSummaries.join("\n")}
-총 섭취량: 칼로리 ${totalCalories}kcal, 탄수화물 ${totalCarbs}g, 단백질 ${totalProtein}g, 지방 ${totalFat}g
-유저 목표: 칼로리 ${goals.goalCalories}kcal, 목표 체중 ${goals.goalWeight}kg
-
-위 정보를 바탕으로 식단의 칼로리와 영양 균형을 분석하고, 건강한 개선 피드백을 세 문장 내외로 한국어로 제공해줘.
-  `;
-}
-
-// ai 호출
-aiService.getMealFeedback = async (meals, goals) => {
-  const prompt = buildMealPrompt(meals, goals);
+  let prompt;
+  if (mode === "weekly") {
+    prompt = `
+아래 JSON 데이터를 참고하여 유저의 7일간 식단을 분석하고, 칼로리와 영양 균형에 대한 추세와 변화에 초점을 맞춘 피드백을 다섯 문장 내외로 한국어로 작성해줘.
+JSON 데이터:
+${JSON.stringify(payload)}
+`;
+    console.log("제이슨", JSON.stringify(payload));
+  } else {
+    prompt = `
+아래 JSON 데이터를 참고하여 유저의 하루 식단을 분석하고, 칼로리와 영양 균형에 대한 피드백을 세 문장 내외로 한국어로 작성해줘.
+JSON 데이터:
+${JSON.stringify(payload)}
+`;
+    console.log("제이슨", JSON.stringify(payload));
+  }
 
   const response = await openai.chat.completions.create({
     model: "gpt-4.1-mini",

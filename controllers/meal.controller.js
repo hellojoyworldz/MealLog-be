@@ -149,16 +149,31 @@ mealController.deleteMeal = async (req, res) => {
   }
 };
 
+// AI에게 보낼 일일 식단 불러오기
 mealController.loadMeals = async (req, res, next) => {
   try {
     const { userId } = req;
-    const { date, type } = req.query;
+    const { date, type, mode } = req.query;
 
     const query = { userId };
-    if (date) query.date = date;
+    if (mode === "weekly") {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const sevenDaysAgo = new Date(today);
+      sevenDaysAgo.setDate(today.getDate() - 6);
+      query.date = {
+        $gte: sevenDaysAgo.toISOString().slice(0, 10),
+        $lte: today.toISOString().slice(0, 10),
+      };
+    } else if (mode === "daily") {
+      const today = new Date();
+      query.date = today.toISOString().slice(0, 10);
+    } else if (date) {
+      query.date = date;
+    }
     if (type) query.type = type;
 
-    const meals = await Meal.find(query);
+    const meals = await Meal.find(query).lean();
 
     if (!meals.length) {
       return res
@@ -167,6 +182,7 @@ mealController.loadMeals = async (req, res, next) => {
     }
 
     req.meals = meals; // 다음 미들웨어/컨트롤러에서 사용
+    req.mode = mode || "daily";
     next();
   } catch (error) {
     return res.status(400).json({ status: "fail", error: error.message });

@@ -8,7 +8,7 @@ const router = express.Router();
 router.post(
   "/feedback",
   authController.authenticate,
-  mealController.loadMeals, // db에서 식단 불러오고
+  mealController.loadMeals, // mode에 따라 하루치 또는 7일치 식단을 미들웨어에서 처리
   aiController.getMealFeedback // ai가 분석 및 피드백 반환
 );
 
