@@ -183,24 +183,23 @@ mealController.loadMeals = async (req, res, next) => {
     const { date, type, mode } = req.query;
 
     const query = { userId };
+
     if (mode === "weekly") {
       const today = new Date();
-      today.setHours(23, 59, 59, 999); // 오늘 끝 시각
+      today.setHours(23, 59, 59, 999);
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(today.getDate() - 6);
-      sevenDaysAgo.setHours(0, 0, 0, 0); // 7일 전 시작 시각
+      sevenDaysAgo.setHours(0, 0, 0, 0);
 
-      query.date = {
-        $gte: sevenDaysAgo,
-        $lte: today,
-      };
+      query.date = { $gte: sevenDaysAgo, $lte: today };
     } else if (mode === "daily") {
-      const todayStart = new Date();
-      todayStart.setHours(0, 0, 0, 0);
-      const todayEnd = new Date();
-      todayEnd.setHours(23, 59, 59, 999);
+      // mode=daily일 때, date가 있으면 해당 날짜로, 없으면 오늘
+      const targetDate = date ? new Date(date) : new Date();
+      targetDate.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(targetDate);
+      endOfDay.setHours(23, 59, 59, 999);
 
-      query.date = { $gte: todayStart, $lte: todayEnd };
+      query.date = { $gte: targetDate, $lte: endOfDay };
     } else if (date) {
       const startOfDay = new Date(date);
       startOfDay.setHours(0, 0, 0, 0);
@@ -209,6 +208,7 @@ mealController.loadMeals = async (req, res, next) => {
 
       query.date = { $gte: startOfDay, $lte: endOfDay };
     }
+
     if (type) query.type = type;
 
     const meals = await Meal.find(query).lean();
@@ -219,7 +219,7 @@ mealController.loadMeals = async (req, res, next) => {
         .json({ status: "fail", error: "식단 기록이 없습니다." });
     }
 
-    req.meals = meals; // 다음 미들웨어/컨트롤러에서 사용
+    req.meals = meals;
     req.mode = mode || "daily";
     next();
   } catch (error) {

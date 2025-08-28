@@ -10,6 +10,7 @@ const MealFeedbackSchema = new Schema(
     },
     mealIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "Meal" }], // 연결된 식단(하루 또는 일주일치)
     mode: { type: String, enum: ["daily", "weekly"], required: true },
+    date: { type: Date, default: null }, // 피드백 생성 시 기본값 null, 필수 아님
     feedback: {
       nutritionBalance: { type: String }, // 영양 밸런스 평가
       goodPoints: { type: String }, // 잘하고 있는 점
