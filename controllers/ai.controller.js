@@ -24,7 +24,6 @@ aiController.getMealFeedback = async (req, res) => {
       filteredMeals = meals.filter((meal) => meal.type === type);
     }
 
-    // -----------------------------
     // 중복 피드백 확인 및 저장할 날짜 계산
     let feedbackDate;
     let existingFeedback;
@@ -41,26 +40,44 @@ aiController.getMealFeedback = async (req, res) => {
         date: { $gte: feedbackDate, $lte: endOfDay },
       });
     } else if (mode === "weekly") {
-      const today = new Date();
+      const today = date ? new Date(date) : new Date();
       const dayOfWeek = today.getDay(); // 일요일=0
+      // Calculate Monday as start of week
+      const diffToMonday = (dayOfWeek + 6) % 7; // convert Sunday=0 to 6, Monday=1 to 0, etc.
       feedbackDate = new Date(today);
-      feedbackDate.setDate(today.getDate() - dayOfWeek); // 주 시작일
+      feedbackDate.setDate(today.getDate() - diffToMonday); // 주 시작일 (Monday)
       feedbackDate.setHours(0, 0, 0, 0);
 
       const weekEnd = new Date(feedbackDate);
       weekEnd.setDate(weekEnd.getDate() + 6);
       weekEnd.setHours(23, 59, 59, 999);
 
-      const existingFeedbackWeekly = await MealFeedback.findOne({
+      existingFeedback = await MealFeedback.findOne({
         userId,
         mode,
         date: { $gte: feedbackDate, $lte: weekEnd },
       });
 
-      if (existingFeedbackWeekly) {
-        return res.status(409).json({
-          status: "fail",
-          message: "기존 피드백이 존재합니다.",
+      if (existingFeedback) {
+        // AI 피드백 요청
+        const feedbackText = await aiService.getMealFeedback(
+          filteredMeals,
+          goals,
+          mode
+        );
+
+        // 응답 텍스트 파싱
+        const parsed = parseFeedback(feedbackText);
+
+        existingFeedback.mealIds = filteredMeals.map((m) => m._id);
+        existingFeedback.feedback = parsed;
+        existingFeedback.updatedAt = new Date();
+        await existingFeedback.save();
+
+        return res.status(200).json({
+          status: "success",
+          message: "기존 피드백이 최신 내용으로 갱신되었습니다.",
+          feedback: existingFeedback,
         });
       }
     }
@@ -141,8 +158,10 @@ aiController.getUserMealFeedback = async (req, res) => {
 
       const targetDate = new Date(date);
       const dayOfWeek = targetDate.getDay();
+      // Calculate Monday as start of week
+      const diffToMonday = (dayOfWeek + 6) % 7;
       const startOfWeek = new Date(targetDate);
-      startOfWeek.setDate(targetDate.getDate() - dayOfWeek);
+      startOfWeek.setDate(targetDate.getDate() - diffToMonday);
       startOfWeek.setHours(0, 0, 0, 0);
 
       const endOfWeek = new Date(startOfWeek);
