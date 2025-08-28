@@ -216,4 +216,60 @@ mealController.loadMeals = async (req, res, next) => {
   }
 };
 
+mealController.getMonthlyMealDates = async (req, res) => {
+  try {
+    const { userId } = req;
+    const { year, month } = req.query;
+
+    if (!year || !month) {
+      return res.status(400).json({
+        status: "fail",
+        error: "년도와 월을 모두 입력해주세요",
+      });
+    }
+
+    // 해당 월의 시작일과 마지막일 계산
+    const startDate = new Date(parseInt(year), parseInt(month) - 1, 1);
+    const endDate = new Date(
+      parseInt(year),
+      parseInt(month),
+      0,
+      23,
+      59,
+      59,
+      999
+    );
+
+    // 해당 월에 식단이 있는 날짜들만 조회
+    const meals = await Meal.aggregate([
+      {
+        $match: {
+          userId,
+          date: { $gte: startDate, $lte: endDate },
+        },
+      },
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m-%d", date: "$date" } },
+          mealTypes: { $addToSet: "$type" },
+        },
+      },
+    ]);
+
+    // 날짜 배열로 변환
+    const dates = meals.map((meal) => meal._id);
+
+    res.status(200).json({
+      status: "success",
+      data: {
+        year: parseInt(year),
+        month: parseInt(month),
+        dates,
+      },
+    });
+  } catch (error) {
+    res.status(400).json({ status: "fail", error: error.message });
+  }
+};
+
 export default mealController;
