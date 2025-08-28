@@ -111,7 +111,7 @@ mealController.getMyMeal = async (req, res) => {
 /**
  * 특정 식사(food) 수정
  */
-mealController.updateMeal = async (req, res) => {
+mealController.updateFood = async (req, res) => {
   try {
     const { userId } = req;
     const { mealId, foodId } = req.params;
@@ -131,6 +131,29 @@ mealController.updateMeal = async (req, res) => {
 
     // food 업데이트
     Object.assign(food, updateData);
+
+    await meal.save();
+
+    res.status(200).json({ status: "success", data: meal });
+  } catch (error) {
+    res.status(400).json({ status: "fail", error: error.message });
+  }
+};
+
+mealController.updateMeal = async (req, res) => {
+  try {
+    const { userId } = req;
+    const { mealId } = req.params;
+    const updateData = req.body;
+
+    // meal 문서 찾고
+    const meal = await Meal.findOne({ _id: mealId, userId });
+    if (!meal) {
+      return res.status(404).json({ status: "fail", error: "Meal not found" });
+    }
+
+    // food 업데이트
+    Object.assign(meal, updateData);
 
     await meal.save();
 
