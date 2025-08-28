@@ -12,8 +12,7 @@ aiController.getMealFeedback = async (req, res) => {
       goalCalories: user.goalCalories,
       goalWeight: user.goalWeight,
     };
-    const feedback = await aiService.getMealFeedback(meals, goals);
-
+    const feedback = await aiService.getMealFeedback(meals, goals, req.mode);
     res.status(200).json({ status: "success", feedback });
   } catch (error) {
     res.status(500).json({ status: "fail", error: error.message });
