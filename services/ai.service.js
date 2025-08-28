@@ -25,7 +25,7 @@ aiService.getMealFeedback = async (meals, goals, mode = "daily") => {
 응답은 다음 세 가지 항목으로 나누어 한국어로 작성해줘.
 1. 영양 밸런스 평가 (탄수화물, 단백질, 지방, 당류) 세 문장 내외
 2. 잘하고 있는 점
-3. 개선할 점
+3. 개선할 점 (작은 점이라도 반드시 작성)
 
 JSON 데이터:
 ${JSON.stringify(payload)}
@@ -33,7 +33,12 @@ ${JSON.stringify(payload)}
     console.log("제이슨", JSON.stringify(payload));
   } else {
     prompt = `
-아래 JSON 데이터를 참고하여 유저의 하루 식단을 분석하고, 칼로리와 영양 균형에 대한 피드백을 세 문장 내외로 한국어로 작성해줘.
+아래 JSON 데이터를 참고하여 유저의 하루 식단을 분석해줘 
+응답은 다음 세 가지 항목으로 나누어 한국어로 작성해줘.
+1. 영양 밸런스 평가 (탄수화물, 단백질, 지방, 당류) 세 문장 내외
+2. 잘하고 있는 점
+3. 개선할 점 (작은 점이라도 반드시 작성)
+
 JSON 데이터:
 ${JSON.stringify(payload)}
 `;
