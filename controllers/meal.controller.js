@@ -185,18 +185,29 @@ mealController.loadMeals = async (req, res, next) => {
     const query = { userId };
     if (mode === "weekly") {
       const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const sevenDaysAgo = new Date(today);
+      today.setHours(23, 59, 59, 999); // 오늘 끝 시각
+      const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(today.getDate() - 6);
+      sevenDaysAgo.setHours(0, 0, 0, 0); // 7일 전 시작 시각
+
       query.date = {
-        $gte: sevenDaysAgo.toISOString().slice(0, 10),
-        $lte: today.toISOString().slice(0, 10),
+        $gte: sevenDaysAgo,
+        $lte: today,
       };
     } else if (mode === "daily") {
-      const today = new Date();
-      query.date = today.toISOString().slice(0, 10);
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      const todayEnd = new Date();
+      todayEnd.setHours(23, 59, 59, 999);
+
+      query.date = { $gte: todayStart, $lte: todayEnd };
     } else if (date) {
-      query.date = date;
+      const startOfDay = new Date(date);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(date);
+      endOfDay.setHours(23, 59, 59, 999);
+
+      query.date = { $gte: startOfDay, $lte: endOfDay };
     }
     if (type) query.type = type;
 
