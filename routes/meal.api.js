@@ -7,5 +7,10 @@ router.post("/", authController.authenticate, mealController.createMeal);
 router.get("/", authController.authenticate, mealController.getMyMeal);
 router.put("/", authController.authenticate, mealController.updateMeal);
 router.delete("/", authController.authenticate, mealController.deleteMeal);
+router.get(
+  "/dates",
+  authController.authenticate,
+  mealController.getMonthlyMealDates
+);
 
 export default router;
