@@ -21,7 +21,12 @@ aiService.getMealFeedback = async (meals, goals, mode = "daily") => {
   let prompt;
   if (mode === "weekly") {
     prompt = `
-아래 JSON 데이터를 참고하여 유저의 7일간 식단을 분석하고, 칼로리와 영양 균형에 대한 추세와 변화에 초점을 맞춘 피드백을 다섯 문장 내외로 한국어로 작성해줘.
+아래 JSON 데이터를 참고하여 유저의 7일간 식단을 분석해줘 
+응답은 다음 세 가지 항목으로 나누어 한국어로 작성해줘.
+1. 영양 밸런스 평가 (탄수화물, 단백질, 지방, 당류) 세 문장 내외
+2. 잘하고 있는 점
+3. 개선할 점
+
 JSON 데이터:
 ${JSON.stringify(payload)}
 `;
