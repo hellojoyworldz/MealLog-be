@@ -5,7 +5,8 @@ import mealController from "../controllers/meal.controller.js";
 
 router.post("/", authController.authenticate, mealController.createMeal);
 router.get("/", authController.authenticate, mealController.getMyMeal);
-router.put("/", authController.authenticate, mealController.updateMeal);
+router.put("/", authController.authenticate, mealController.updateFood);
+router.put("/:mealId", authController.authenticate, mealController.updateMeal);
 router.delete("/", authController.authenticate, mealController.deleteMeal);
 router.get(
   "/dates",
