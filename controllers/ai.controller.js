@@ -21,7 +21,9 @@ aiController.getMealFeedback = async (req, res) => {
     // filteredMeals: daily 모드일 때 type 필터 적용
     let filteredMeals = meals;
     if (mode === "daily" && type) {
-      filteredMeals = meals.filter((meal) => meal.type === type);
+      type === "all"
+        ? (filteredMeals = meals)
+        : (filteredMeals = meals.filter((meal) => meal.type === type));
     }
 
     // 중복 피드백 확인 및 저장할 날짜 계산
@@ -38,6 +40,7 @@ aiController.getMealFeedback = async (req, res) => {
         userId,
         mode,
         date: { $gte: feedbackDate, $lte: endOfDay },
+        type: type || "all",
       });
     } else if (mode === "weekly") {
       const today = date ? new Date(date) : new Date();
@@ -112,6 +115,7 @@ aiController.getMealFeedback = async (req, res) => {
       mode,
       date: feedbackDate,
       feedback: parsed,
+      type: type || "all",
     });
 
     res.status(200).json({ status: "success", feedback: feedbackDoc });
@@ -131,7 +135,7 @@ aiController.getUserMealFeedback = async (req, res) => {
       if (!date) {
         return res.status(400).json({
           status: "fail",
-          message: "daily 모드에서는 date 값이 필요합니다.",
+          error: "daily 모드에서는 date 값이 필요합니다.",
         });
       }
 
@@ -145,14 +149,14 @@ aiController.getUserMealFeedback = async (req, res) => {
         mode,
         date: { $gte: startOfDay, $lte: endOfDay },
       };
-      if (type) query["feedback.type"] = type; // feedback 내부에 type 저장했을 경우
+      if (type) query.type = type; // feedback 내부에 type 저장했을 경우
 
       feedbacks = await MealFeedback.find(query);
     } else if (mode === "weekly") {
       if (!date) {
         return res.status(400).json({
           status: "fail",
-          message: "weekly 모드에서는 date 값이 필요합니다.",
+          error: "weekly 모드에서는 date 값이 필요합니다.",
         });
       }
 
@@ -176,14 +180,14 @@ aiController.getUserMealFeedback = async (req, res) => {
     } else {
       return res
         .status(400)
-        .json({ status: "fail", message: "유효하지 않은 mode 값입니다." });
+        .json({ status: "fail", error: "유효하지 않은 mode 값입니다." });
     }
 
-    if (!feedbacks || feedbacks.length === 0) {
-      return res
-        .status(404)
-        .json({ status: "fail", message: "피드백이 존재하지 않습니다." });
-    }
+    // if (!feedbacks || feedbacks.length === 0) {
+    //   return res
+    //     .status(400)
+    //     .json({ status: "fail", error: "피드백이 존재하지 않습니다." });
+    // }
 
     res.status(200).json({ status: "success", feedbacks });
   } catch (error) {
