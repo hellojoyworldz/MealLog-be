@@ -153,14 +153,14 @@ aiController.getUserMealFeedback = async (req, res) => {
 
       feedbacks = await MealFeedback.find(query);
     } else if (mode === "weekly") {
-      if (!date) {
-        return res.status(400).json({
-          status: "fail",
-          error: "weekly 모드에서는 date 값이 필요합니다.",
-        });
-      }
+      // if (!date) {
+      //   return res.status(400).json({
+      //     status: "fail",
+      //     error: "weekly 모드에서는 date 값이 필요합니다.",
+      //   });
+      // }
 
-      const targetDate = new Date(date);
+      const targetDate = new Date(date || new Date());
       const dayOfWeek = targetDate.getDay();
       // Calculate Monday as start of week
       const diffToMonday = (dayOfWeek + 6) % 7;
