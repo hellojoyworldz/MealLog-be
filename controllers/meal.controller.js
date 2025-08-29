@@ -9,7 +9,17 @@ mealController.createMeal = async (req, res) => {
     const { userId } = req; // 로그인 미들웨어에서 세팅된다고 가정
     const { date, type, foods, photo, memo } = req.body;
 
-    let meal = await Meal.findOne({ userId, date, type });
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    let meal = await Meal.findOne({
+      userId,
+      type,
+      date: { $gte: startOfDay, $lte: endOfDay },
+    });
 
     if (!meal) {
       meal = new Meal({
@@ -44,7 +54,15 @@ mealController.getMyMeal = async (req, res) => {
     const { date, type } = req.query;
 
     const query = { userId };
-    if (date) query.date = date;
+    if (date) {
+      const startOfDay = new Date(date);
+      startOfDay.setHours(0, 0, 0, 0);
+
+      const endOfDay = new Date(date);
+      endOfDay.setHours(23, 59, 59, 999);
+
+      query.date = { $gte: startOfDay, $lte: endOfDay };
+    }
     if (type) query.type = type;
 
     const meals = await Meal.find(query);
@@ -93,7 +111,7 @@ mealController.getMyMeal = async (req, res) => {
 /**
  * 특정 식사(food) 수정
  */
-mealController.updateMeal = async (req, res) => {
+mealController.updateFood = async (req, res) => {
   try {
     const { userId } = req;
     const { mealId, foodId } = req.params;
@@ -122,25 +140,21 @@ mealController.updateMeal = async (req, res) => {
   }
 };
 
-/**
- * 특정 음식(food) 삭제
- */
-mealController.deleteMeal = async (req, res) => {
+mealController.updateMeal = async (req, res) => {
   try {
     const { userId } = req;
-    const { mealId, foodId } = req.params;
+    const { mealId } = req.params;
+    const updateData = req.body;
 
+    // meal 문서 찾고
     const meal = await Meal.findOne({ _id: mealId, userId });
     if (!meal) {
       return res.status(404).json({ status: "fail", error: "Meal not found" });
     }
 
-    const food = meal.foods.id(foodId);
-    if (!food) {
-      return res.status(404).json({ status: "fail", error: "Food not found" });
-    }
+    // food 업데이트
+    Object.assign(meal, updateData);
 
-    food.deleteOne(); // 배열에서 제거
     await meal.save();
 
     res.status(200).json({ status: "success", data: meal });
@@ -149,16 +163,80 @@ mealController.deleteMeal = async (req, res) => {
   }
 };
 
+/**
+ * 특정 음식(food) 삭제
+ */
+mealController.deleteMeal = async (req, res) => {
+  try {
+    const { userId } = req;
+    const { mealId, foodId } = req.query;
+
+    const meal = await Meal.findOne({ _id: mealId, userId });
+    if (!meal) {
+      return res.status(404).json({ status: "fail", error: "Meal not found" });
+    }
+
+    if (foodId) {
+      // foodId가 있으면 meal의 food 하나만 삭제
+      const food = meal.foods.id(foodId);
+      if (!food) {
+        return res
+          .status(404)
+          .json({ status: "fail", error: "Food not found" });
+      }
+      food.deleteOne();
+      await meal.save();
+      return res.status(200).json({ status: "success", data: meal });
+    } else {
+      // foodId 없으면 meal 전체 삭제
+      await Meal.deleteOne({ _id: mealId, userId });
+      return res
+        .status(200)
+        .json({ status: "success", message: "Meal deleted" });
+    }
+  } catch (error) {
+    res.status(400).json({ status: "fail", error: error.message });
+  }
+};
+
+// AI에게 보낼 일일 식단 불러오기
 mealController.loadMeals = async (req, res, next) => {
   try {
     const { userId } = req;
-    const { date, type } = req.query;
+    const { date, type, mode } = req.query;
 
     const query = { userId };
-    if (date) query.date = date;
-    if (type) query.type = type;
 
-    const meals = await Meal.find(query);
+    if (mode === "weekly") {
+      const today = new Date();
+      today.setHours(23, 59, 59, 999);
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(today.getDate() - 6);
+      sevenDaysAgo.setHours(0, 0, 0, 0);
+
+      query.date = { $gte: sevenDaysAgo, $lte: today };
+    } else if (mode === "daily") {
+      // mode=daily일 때, date가 있으면 해당 날짜로, 없으면 오늘
+      const targetDate = date ? new Date(date) : new Date();
+      targetDate.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(targetDate);
+      endOfDay.setHours(23, 59, 59, 999);
+
+      query.date = { $gte: targetDate, $lte: endOfDay };
+    } else if (date) {
+      const startOfDay = new Date(date);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(date);
+      endOfDay.setHours(23, 59, 59, 999);
+
+      query.date = { $gte: startOfDay, $lte: endOfDay };
+    }
+
+    if (type && type !== "all") {
+      query.type = type;
+    }
+
+    const meals = await Meal.find(query).lean();
 
     if (!meals.length) {
       return res
@@ -166,11 +244,123 @@ mealController.loadMeals = async (req, res, next) => {
         .json({ status: "fail", error: "식단 기록이 없습니다." });
     }
 
-    req.meals = meals; // 다음 미들웨어/컨트롤러에서 사용
+    req.meals = meals;
+    req.mode = mode || "daily";
     next();
   } catch (error) {
     return res.status(400).json({ status: "fail", error: error.message });
   }
 };
 
+mealController.getMonthlyMealDates = async (req, res) => {
+  try {
+    const { userId } = req;
+    const { year, month } = req.query;
+
+    if (!year || !month) {
+      return res.status(400).json({
+        status: "fail",
+        error: "년도와 월을 모두 입력해주세요",
+      });
+    }
+
+    // 해당 월의 시작일과 마지막일 계산
+    const startDate = new Date(parseInt(year), parseInt(month) - 1, 1);
+    const endDate = new Date(
+      parseInt(year),
+      parseInt(month),
+      0,
+      23,
+      59,
+      59,
+      999
+    );
+
+    // 해당 월에 식단이 있는 날짜들만 조회
+    const meals = await Meal.aggregate([
+      {
+        $match: {
+          userId,
+          date: { $gte: startDate, $lte: endDate },
+        },
+      },
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m-%d", date: "$date" } },
+          mealTypes: { $addToSet: "$type" },
+        },
+      },
+    ]);
+
+    // 날짜 배열로 변환
+    const dates = meals.map((meal) => meal._id);
+
+    res.status(200).json({
+      status: "success",
+      data: {
+        year: parseInt(year),
+        month: parseInt(month),
+        dates,
+      },
+    });
+  } catch (error) {
+    res.status(400).json({ status: "fail", error: error.message });
+  }
+};
+
+mealController.getMealStatistics = async (req, res) => {
+  try {
+    const { userId } = req;
+    const { startDate, endDate } = req.query;
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({
+        status: "fail",
+        error: "startDate와 endDate를 모두 입력해주세요",
+      });
+    }
+
+    const start = new Date(startDate);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
+
+    // 날짜별 칼로리 합계
+    const trend = await Meal.aggregate([
+      {
+        $match: {
+          userId,
+          date: { $gte: start, $lte: end },
+        },
+      },
+      { $unwind: "$foods" },
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m-%d", date: "$date" } },
+          totalCalories: { $sum: "$foods.calories" },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+
+    // 평균 칼로리
+    const avgCalories =
+      trend.length > 0
+        ? Math.floor(
+            trend.reduce((sum, d) => sum + d.totalCalories, 0) / trend.length
+          )
+        : 0;
+
+    res.status(200).json({
+      status: "success",
+      data: {
+        trend, // [{ date, totalCalories }, ...]
+        avgCalories,
+        days: trend.length,
+      },
+    });
+  } catch (error) {
+    res.status(400).json({ status: "fail", error: error.message });
+  }
+};
 export default mealController;
