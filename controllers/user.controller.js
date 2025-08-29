@@ -73,6 +73,7 @@ userController.updateUser = async (req, res) => {
       "weight",
       "bodyFat",
       "picture",
+      "birthDate",
     ];
 
     // body에 들어온 값만 updateFields에 추가
