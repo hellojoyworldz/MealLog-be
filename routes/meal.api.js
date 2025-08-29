@@ -13,4 +13,15 @@ router.get(
   mealController.getMonthlyMealDates
 );
 
+router.get(
+  "/calorie-trend",
+  authController.authenticate,
+  mealController.getCalorieTrend
+);
+router.get(
+  "/avg-calorie",
+  authController.authenticate,
+  mealController.getAverageCalories
+);
+
 export default router;
