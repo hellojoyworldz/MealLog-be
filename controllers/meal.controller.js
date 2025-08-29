@@ -232,7 +232,9 @@ mealController.loadMeals = async (req, res, next) => {
       query.date = { $gte: startOfDay, $lte: endOfDay };
     }
 
-    if (type) query.type = type;
+    if (type && type !== "all") {
+      query.type = type;
+    }
 
     const meals = await Meal.find(query).lean();
 

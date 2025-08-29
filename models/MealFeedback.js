@@ -16,6 +16,11 @@ const MealFeedbackSchema = new Schema(
       goodPoints: { type: String }, // 잘하고 있는 점
       improvementPoints: { type: String }, // 보완할 점
     },
+    type: {
+      type: String,
+      enum: ["all", "breakfast", "lunch", "dinner", "snack"],
+      default: "all",
+    },
   },
   { timestamps: true }
 );
