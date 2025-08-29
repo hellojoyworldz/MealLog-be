@@ -308,4 +308,59 @@ mealController.getMonthlyMealDates = async (req, res) => {
   }
 };
 
+mealController.getMealStatistics = async (req, res) => {
+  try {
+    const { userId } = req;
+    const { startDate, endDate } = req.query;
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({
+        status: "fail",
+        error: "startDate와 endDate를 모두 입력해주세요",
+      });
+    }
+
+    const start = new Date(startDate);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
+
+    // 날짜별 칼로리 합계
+    const trend = await Meal.aggregate([
+      {
+        $match: {
+          userId,
+          date: { $gte: start, $lte: end },
+        },
+      },
+      { $unwind: "$foods" },
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m-%d", date: "$date" } },
+          totalCalories: { $sum: "$foods.calories" },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+
+    // 평균 칼로리
+    const avgCalories =
+      trend.length > 0
+        ? Math.floor(
+            trend.reduce((sum, d) => sum + d.totalCalories, 0) / trend.length
+          )
+        : 0;
+
+    res.status(200).json({
+      status: "success",
+      data: {
+        trend, // [{ date, totalCalories }, ...]
+        avgCalories,
+        days: trend.length,
+      },
+    });
+  } catch (error) {
+    res.status(400).json({ status: "fail", error: error.message });
+  }
+};
 export default mealController;

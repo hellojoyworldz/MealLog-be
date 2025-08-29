@@ -14,4 +14,10 @@ router.get(
   mealController.getMonthlyMealDates
 );
 
+router.get(
+  "/statistics",
+  authController.authenticate,
+  mealController.getMealStatistics
+);
+
 export default router;
