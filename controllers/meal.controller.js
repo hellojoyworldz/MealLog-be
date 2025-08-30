@@ -7,7 +7,7 @@ import { upsertMeal, removeMeal } from "../services/vectorStore.service.js";
  */
 mealController.createMeal = async (req, res) => {
   try {
-    const { userId } = req; // 로그인 미들웨어에서 세팅된다고 가정
+    const { userId } = req; 
     const { date, type, foods, photo, memo } = req.body;
 
     const startOfDay = new Date(date);
@@ -84,19 +84,22 @@ mealController.getMyMeal = async (req, res) => {
       },
     };
 
-    meals.forEach((meal) => {
-      meal.foods.forEach((food) => {
-        totalSummary.calories += food.calories || 0;
-        totalSummary.carbs += food.nutrients?.carbs || 0;
-        totalSummary.protein += food.nutrients?.protein || 0;
-        totalSummary.fat += food.nutrients?.fat || 0;
-        totalSummary.sugar += food.nutrients?.sugar || 0;
-        // 타입별 칼로리 집계
-        if (meal.type && totalSummary.byType[meal.type]) {
-          totalSummary.byType[meal.type].calories += food.calories || 0;
-        }
-      });
-    });
+  meals.forEach((meal) => {
+  meal.foods.forEach((food) => {
+    const count = food.num || 1; // 기본값 1
+
+    totalSummary.calories += (food.calories || 0) * count;
+    totalSummary.carbs += (food.nutrients?.carbs || 0) * count;
+    totalSummary.protein += (food.nutrients?.protein || 0) * count;
+    totalSummary.fat += (food.nutrients?.fat || 0) * count;
+    totalSummary.sugar += (food.nutrients?.sugar || 0) * count;
+
+    // 타입별 칼로리 집계
+    if (meal.type && totalSummary.byType[meal.type]) {
+      totalSummary.byType[meal.type].calories += (food.calories || 0) * count;
+    }
+  });
+});
 
     res.status(200).json({
       status: "success",

@@ -11,7 +11,7 @@ const MealSchema = new Schema(
     },
     foods: [
       {
-        num: { type: Number, required: true },
+        num: { type: Number, required: true }, // 음식 수량
         name: { type: String, required: true }, // 음식 이름
         amount: { type: Number, required: true }, // 섭취량 (그램)
         calories: { type: Number, required: true }, // 칼로리
