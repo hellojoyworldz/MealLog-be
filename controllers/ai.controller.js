@@ -205,6 +205,8 @@ aiController.getChat = async (req, res) => {
     res.setHeader("Cache-Control", "no-cache, no-transform");
     res.setHeader("Connection", "keep-alive");
     res.setHeader("X-Accel-Buffering", "no");
+    res.setHeader("Transfer-Encoding", "chunked");
+    res.flushHeaders?.();
 
     // 유저 목표 가져오기
     const user = await User.findById(userId);
@@ -219,7 +221,7 @@ aiController.getChat = async (req, res) => {
     // 채팅 기록 가져오기
     const chatHistory = await Chat.find({ userId })
       .sort({ timestamp: -1 })
-      .limit(10)
+      .limit(6)
       .lean();
 
     // 채팅 응답 받아오기
@@ -244,6 +246,7 @@ aiController.getChat = async (req, res) => {
       if (chunk.type === "response.output_text.delta") {
         text += chunk.delta;
         res.write(`data: ${chunk.delta}\n\n`);
+        res.flush?.();
       } else if (chunk.type === "response.completed") {
         saveChat(text);
         res.write(`data: [DONE]\n\n`);
