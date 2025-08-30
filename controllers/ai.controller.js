@@ -1,8 +1,8 @@
 import User from "../models/User.js";
 import MealFeedback from "../models/MealFeedback.js";
+import Chat from "../models/Chat.js";
 import { parseFeedback } from "../utils/parseFeedback.js";
 import aiService from "../services/ai.service.js";
-
 const aiController = {};
 
 aiController.getMealFeedback = async (req, res) => {
@@ -194,4 +194,67 @@ aiController.getUserMealFeedback = async (req, res) => {
     res.status(500).json({ status: "fail", error: error.message });
   }
 };
+
+aiController.getChat = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { message } = req.body;
+
+    // SSE 헤더
+    res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+    res.setHeader("Cache-Control", "no-cache, no-transform");
+    res.setHeader("Connection", "keep-alive");
+    res.setHeader("X-Accel-Buffering", "no");
+
+    // 유저 목표 가져오기
+    const user = await User.findById(userId);
+    const userName = user.name;
+    const goals = {
+      goalCalories: user.goalCalories,
+      goalWeight: user.goalWeight,
+      height: user.height,
+      weight: user.weight,
+    };
+
+    // 채팅 기록 가져오기
+    const chatHistory = await Chat.find({ userId })
+      .sort({ timestamp: -1 })
+      .limit(20)
+      .lean();
+    chatHistory.reverse();
+
+    // 채팅 응답 받아오기
+    const chatResponse = await aiService.getChatResponse({
+      message,
+      chatHistory,
+      userName,
+      goals,
+    });
+
+    // 채팅 기록 저장
+    const saveChat = async (chatResponse) => {
+      await Chat.create([
+        { userId, role: "user", content: message },
+        { userId, role: "assistant", content: chatResponse },
+      ]);
+    };
+
+    let text = "";
+
+    for await (const chunk of chatResponse) {
+      if (chunk.type === "response.output_text.delta") {
+        text += chunk.delta;
+        res.write(`data: ${chunk.delta}\n\n`);
+      } else if (chunk.type === "response.completed") {
+        saveChat(text);
+        res.write(`data: [DONE]\n\n`);
+        res.end();
+      }
+    }
+  } catch (error) {
+    res.write(`data: [ERROR] ${error.message}\n\n`);
+    res.end();
+  }
+};
+
 export default aiController;

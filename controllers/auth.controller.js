@@ -63,7 +63,7 @@ authController.authenticate = (req, res, next) => {
 
     const token = tokenString.replace("Bearer ", "");
     const payload = jwt.verify(token, JWT_SECRET_KEY);
-    console.log("payload: ", payload);
+    // console.log("payload: ", payload);
 
     req.userId = payload._id; // payload에서 유저 id 꺼내고
     next(); // 인증 성공하면 다음 미들웨어
