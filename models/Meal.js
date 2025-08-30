@@ -11,7 +11,7 @@ const MealSchema = new Schema(
     },
     foods: [
       {
-        num: { type: Number, required: true },
+        num: { type: Number, required: true }, // 음식 수량
         name: { type: String, required: true }, // 음식 이름
         amount: { type: Number, required: true }, // 섭취량 (그램)
         calories: { type: Number, required: true }, // 칼로리
@@ -25,9 +25,13 @@ const MealSchema = new Schema(
     ],
     photo: { type: String }, // 이미지 URL주소
     memo: { type: String }, // 식사 메모
+    vectorFileId: { type: String }, // 벡터 파일 ID
   },
   { timestamps: true }
 );
+
+MealSchema.index({ userId: 1, date: 1 });
+MealSchema.index({ userId: 1, date: 1, type: 1 }, { unique: true });
 
 MealSchema.methods.toJSON = function () {
   const obj = this._doc;

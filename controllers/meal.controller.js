@@ -1,12 +1,13 @@
 const mealController = {};
 import Meal from "../models/Meal.js";
+import { upsertMeal, removeMeal } from "../services/vectorStore.service.js";
 
 /**
  * 식사 추가 (존재하면 foods push)
  */
 mealController.createMeal = async (req, res) => {
   try {
-    const { userId } = req; // 로그인 미들웨어에서 세팅된다고 가정
+    const { userId } = req; 
     const { date, type, foods, photo, memo } = req.body;
 
     const startOfDay = new Date(date);
@@ -37,6 +38,7 @@ mealController.createMeal = async (req, res) => {
     }
 
     await meal.save();
+    await upsertMeal(meal);
 
     res.status(200).json({ status: "success", data: meal });
   } catch (error) {
@@ -82,19 +84,22 @@ mealController.getMyMeal = async (req, res) => {
       },
     };
 
-    meals.forEach((meal) => {
-      meal.foods.forEach((food) => {
-        totalSummary.calories += food.calories || 0;
-        totalSummary.carbs += food.nutrients?.carbs || 0;
-        totalSummary.protein += food.nutrients?.protein || 0;
-        totalSummary.fat += food.nutrients?.fat || 0;
-        totalSummary.sugar += food.nutrients?.sugar || 0;
-        // 타입별 칼로리 집계
-        if (meal.type && totalSummary.byType[meal.type]) {
-          totalSummary.byType[meal.type].calories += food.calories || 0;
-        }
-      });
-    });
+  meals.forEach((meal) => {
+  meal.foods.forEach((food) => {
+    const count = food.num || 1; // 기본값 1
+
+    totalSummary.calories += (food.calories || 0) * count;
+    totalSummary.carbs += (food.nutrients?.carbs || 0) * count;
+    totalSummary.protein += (food.nutrients?.protein || 0) * count;
+    totalSummary.fat += (food.nutrients?.fat || 0) * count;
+    totalSummary.sugar += (food.nutrients?.sugar || 0) * count;
+
+    // 타입별 칼로리 집계
+    if (meal.type && totalSummary.byType[meal.type]) {
+      totalSummary.byType[meal.type].calories += (food.calories || 0) * count;
+    }
+  });
+});
 
     res.status(200).json({
       status: "success",
@@ -133,6 +138,7 @@ mealController.updateFood = async (req, res) => {
     Object.assign(food, updateData);
 
     await meal.save();
+    await upsertMeal(meal);
 
     res.status(200).json({ status: "success", data: meal });
   } catch (error) {
@@ -156,6 +162,7 @@ mealController.updateMeal = async (req, res) => {
     Object.assign(meal, updateData);
 
     await meal.save();
+    await upsertMeal(meal);
 
     res.status(200).json({ status: "success", data: meal });
   } catch (error) {
@@ -186,8 +193,11 @@ mealController.deleteMeal = async (req, res) => {
       }
       food.deleteOne();
       await meal.save();
+      await upsertMeal(meal);
+
       return res.status(200).json({ status: "success", data: meal });
     } else {
+      await removeMeal(meal);
       // foodId 없으면 meal 전체 삭제
       await Meal.deleteOne({ _id: mealId, userId });
       return res
@@ -223,6 +233,12 @@ mealController.loadMeals = async (req, res, next) => {
       endOfDay.setHours(23, 59, 59, 999);
 
       query.date = { $gte: targetDate, $lte: endOfDay };
+    } else if (mode === "caht") {
+      const threeMonthsAgo = new Date();
+      threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+      threeMonthsAgo.setHours(0, 0, 0, 0);
+
+      query.date = { $gte: threeMonthsAgo };
     } else if (date) {
       const startOfDay = new Date(date);
       startOfDay.setHours(0, 0, 0, 0);
@@ -237,6 +253,13 @@ mealController.loadMeals = async (req, res, next) => {
     }
 
     const meals = await Meal.find(query).lean();
+
+    if (mode === "chat") {
+      req.meals = meals;
+      req.mode = mode;
+      next();
+      return;
+    }
 
     if (!meals.length) {
       return res
