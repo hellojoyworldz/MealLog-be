@@ -38,7 +38,7 @@ mealController.createMeal = async (req, res) => {
     }
 
     await meal.save();
-    await upsertMeal(meal);
+    upsertMeal(meal);
 
     res.status(200).json({ status: "success", data: meal });
   } catch (error) {
@@ -143,7 +143,7 @@ mealController.updateFood = async (req, res) => {
     Object.assign(food, updateData);
 
     await meal.save();
-    await upsertMeal(meal);
+    upsertMeal(meal);
 
     res.status(200).json({ status: "success", data: meal });
   } catch (error) {
@@ -167,7 +167,7 @@ mealController.updateMeal = async (req, res) => {
     Object.assign(meal, updateData);
 
     await meal.save();
-    await upsertMeal(meal);
+    upsertMeal(meal);
 
     res.status(200).json({ status: "success", data: meal });
   } catch (error) {
@@ -191,6 +191,7 @@ mealController.deleteMeal = async (req, res) => {
     if (mealId) {
       await removeMeal(meal);
       await Meal.deleteOne({ _id: mealId, userId });
+      removeMeal(meal);
       return res
         .status(200)
         .json({ status: "success", message: "Meal deleted" });
