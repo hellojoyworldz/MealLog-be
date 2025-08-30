@@ -7,7 +7,11 @@ router.post("/", authController.authenticate, mealController.createMeal);
 router.get("/", authController.authenticate, mealController.getMyMeal);
 router.put("/", authController.authenticate, mealController.updateFood);
 router.put("/:mealId", authController.authenticate, mealController.updateMeal);
-router.delete("/", authController.authenticate, mealController.deleteMeal);
+router.delete(
+  "/:mealId",
+  authController.authenticate,
+  mealController.deleteMeal
+);
 router.get(
   "/dates",
   authController.authenticate,

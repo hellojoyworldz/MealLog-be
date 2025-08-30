@@ -228,6 +228,7 @@ aiController.getChat = async (req, res) => {
     const chatResponse = await aiService.getChatResponse({
       message,
       chatHistory,
+      userId,
       userName,
       goals,
     });

@@ -20,6 +20,30 @@ userController.createUser = async (req, res) => {
       status,
     } = req.body;
 
+    // email과 name이 없으면 400 반환
+    if (!email || !name) {
+      return res
+        .status(400)
+        .json({ status: "fail", error: "email과 name은 필수입니다." });
+    }
+
+    // 숫자 필드 검증
+    const numberFields = {
+      goalWeight,
+      goalCalories,
+      muscleMass,
+      height,
+      weight,
+      bodyFat,
+    };
+    for (const [key, value] of Object.entries(numberFields)) {
+      if (value !== undefined && typeof value !== "number") {
+        return res
+          .status(400)
+          .json({ status: "fail", error: `${key}는 숫자여야 합니다.` });
+      }
+    }
+
     const user = await User.findOne({ email });
     if (user) {
       throw new Error("이미 존재하는 사용자입니다.");
@@ -75,6 +99,38 @@ userController.updateUser = async (req, res) => {
       "picture",
       "birthDate",
     ];
+
+    // req.body에 있는 키가 allowedFields에 포함되지 않으면 400 반환
+    for (const key of Object.keys(req.body)) {
+      if (!allowedFields.includes(key)) {
+        return res
+          .status(400)
+          .json({
+            status: "fail",
+            error: `${key} 필드는 업데이트할 수 없습니다.`,
+          });
+      }
+    }
+
+    // 숫자 필드 검증
+    const numberFields = [
+      "goalWeight",
+      "goalCalories",
+      "muscleMass",
+      "height",
+      "weight",
+      "bodyFat",
+    ];
+    for (const field of numberFields) {
+      if (
+        req.body[field] !== undefined &&
+        typeof req.body[field] !== "number"
+      ) {
+        return res
+          .status(400)
+          .json({ status: "fail", error: `${field}는 숫자여야 합니다.` });
+      }
+    }
 
     // body에 들어온 값만 updateFields에 추가
     allowedFields.forEach((field) => {

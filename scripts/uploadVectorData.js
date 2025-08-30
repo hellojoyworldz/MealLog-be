@@ -5,13 +5,15 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-async function uploadVectorData() {
+async function uploadVectorData(userId = null) {
   try {
     await mongoose.connect(process.env.MONGODB_URL);
 
-    const mealsWithoutVector = await Meal.find({
-      vectorFileId: { $exists: false },
-    });
+    const query = userId
+      ? { userId, vectorFileId: { $exists: false } }
+      : { vectorFileId: { $exists: false } };
+
+    const mealsWithoutVector = await Meal.find(query);
 
     if (mealsWithoutVector.length === 0) {
       return;
@@ -19,7 +21,7 @@ async function uploadVectorData() {
 
     for (let i = 0; i < mealsWithoutVector.length; i++) {
       const meal = mealsWithoutVector[i];
-      console.log(`식사 ID ${meal._id} 업로드 중...`);
+      console.log(`식사 ID ${meal._id} (사용자: ${meal.userId}) 업로드 중...`);
 
       try {
         await upsertMeal(meal);
