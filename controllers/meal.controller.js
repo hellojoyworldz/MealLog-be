@@ -1,5 +1,6 @@
 const mealController = {};
 import Meal from "../models/Meal.js";
+import { upsertMeal, removeMeal } from "../services/vectorStore.service.js";
 
 /**
  * 식사 추가 (존재하면 foods push)
@@ -37,6 +38,7 @@ mealController.createMeal = async (req, res) => {
     }
 
     await meal.save();
+    await upsertMeal(meal);
 
     res.status(200).json({ status: "success", data: meal });
   } catch (error) {
@@ -133,6 +135,7 @@ mealController.updateFood = async (req, res) => {
     Object.assign(food, updateData);
 
     await meal.save();
+    await upsertMeal(meal);
 
     res.status(200).json({ status: "success", data: meal });
   } catch (error) {
@@ -156,6 +159,7 @@ mealController.updateMeal = async (req, res) => {
     Object.assign(meal, updateData);
 
     await meal.save();
+    await upsertMeal(meal);
 
     res.status(200).json({ status: "success", data: meal });
   } catch (error) {
@@ -186,8 +190,11 @@ mealController.deleteMeal = async (req, res) => {
       }
       food.deleteOne();
       await meal.save();
+      await upsertMeal(meal);
+
       return res.status(200).json({ status: "success", data: meal });
     } else {
+      await removeMeal(meal);
       // foodId 없으면 meal 전체 삭제
       await Meal.deleteOne({ _id: mealId, userId });
       return res
@@ -223,6 +230,12 @@ mealController.loadMeals = async (req, res, next) => {
       endOfDay.setHours(23, 59, 59, 999);
 
       query.date = { $gte: targetDate, $lte: endOfDay };
+    } else if (mode === "caht") {
+      const threeMonthsAgo = new Date();
+      threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+      threeMonthsAgo.setHours(0, 0, 0, 0);
+
+      query.date = { $gte: threeMonthsAgo };
     } else if (date) {
       const startOfDay = new Date(date);
       startOfDay.setHours(0, 0, 0, 0);
@@ -237,6 +250,13 @@ mealController.loadMeals = async (req, res, next) => {
     }
 
     const meals = await Meal.find(query).lean();
+
+    if (mode === "chat") {
+      req.meals = meals;
+      req.mode = mode;
+      next();
+      return;
+    }
 
     if (!meals.length) {
       return res

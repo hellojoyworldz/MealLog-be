@@ -18,4 +18,6 @@ router.get(
   aiController.getUserMealFeedback
 );
 
+router.post("/chat", authController.authenticate, aiController.getChat);
+
 export default router;
