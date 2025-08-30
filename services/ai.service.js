@@ -53,4 +53,50 @@ ${JSON.stringify(payload)}
   return response.choices[0].message.content.trim();
 };
 
+aiService.getChatResponse = async ({
+  message,
+  chatHistory,
+  userName,
+  goals,
+  months = 3,
+}) => {
+  const prompt = `당신은 전문 영양사입니다. 유저의 최근 ${months}개월간의 식단 데이터 위주로 참고하여 상담을 진행합니다.
+  중요한 규칙:
+  1. 실용적인 조언을 간단하게 제공하세요
+  2. 사용자의 질문이나 요청이 식단/영양과 관련이 없으면 "죄송하지만 저는 영양사로서 식단과 영양에 관한 상담만 도와드릴 수 있습니다.
+  3. 대화는 친근하고 이해하기 쉽게 진행하되, 전문성을 잃지 마세요
+  4. 상대가 힘들어 한다면 용기를 부여하고 칭찬하는 말을 자주 사용하세요
+  5. 상대방 질문에 정확하고 관련성 있는 대답을 해주세요
+  6. 상대방 말이 이해가 안가거나 이상한말을 하면 "죄송하지만 이해하기 어렵습니다. 명확하게 말씀해주세요."라고 답변하고 끝내세요
+  7. 이전 대화를 그대로 반복하지 마세요
+  8. 기본은 한국어이며, 상대방의 언어에 따라 대답해주세요
+  9. 매번 새로운 질문이나 요청에 대해 적절한 답변을 제공하세요
+
+  유저 이름: ${userName}
+  유저 키: ${goals.height}cm
+  유저 몸무게: ${goals.weight}kg
+  유저 하루 섭취 목표 칼로리: ${goals.goalCalories}kcal
+  유저 목표 몸무게: ${goals.goalWeight}kg
+  `;
+
+  const chatUserMessages = chatHistory.map(({ role, content }) => ({
+    role,
+    content,
+  }));
+
+  const messages = [
+    { role: "system", content: prompt },
+    ...chatUserMessages,
+    { role: "user", content: message },
+  ];
+
+  return await openai.responses.stream({
+    model: "gpt-4.1-mini",
+    input: messages,
+    tools: [
+      { type: "file_search", vector_store_ids: [process.env.VECTOR_STORE_ID] },
+    ],
+  });
+};
+
 export default aiService;
