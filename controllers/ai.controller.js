@@ -219,9 +219,8 @@ aiController.getChat = async (req, res) => {
     // 채팅 기록 가져오기
     const chatHistory = await Chat.find({ userId })
       .sort({ timestamp: -1 })
-      .limit(20)
+      .limit(10)
       .lean();
-    chatHistory.reverse();
 
     // 채팅 응답 받아오기
     const chatResponse = await aiService.getChatResponse({
