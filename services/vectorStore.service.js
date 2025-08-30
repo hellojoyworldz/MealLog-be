@@ -46,12 +46,7 @@ export async function upsertMeal(mealDoc) {
   try {
     // 파일이 존재하면 제거
     if (mealDoc.vectorFileId) {
-      try {
-        console.log("파일 제거 시도");
-        await openai.files.delete(mealDoc.vectorFileId);
-      } catch (error) {
-        console.error("파일 제거 실패:", error);
-      }
+      removeMeal(mealDoc);
     }
 
     // 파일 생성 - 파일명에 사용자 정보 포함
@@ -70,6 +65,9 @@ export async function upsertMeal(mealDoc) {
     await openai.vectorStores.fileBatches.createAndPoll(userVectorStoreId, {
       file_ids: [file.id],
     });
+    console.log("================");
+    console.log(mealDoc);
+    console.log("================");
     console.log("파일 업로드 완료");
 
     // 파일 ID 저장
@@ -84,7 +82,19 @@ export async function removeMeal(mealDoc) {
   if (!mealDoc.vectorFileId) return;
 
   try {
-    await openai.files.delete(mealDoc.vectorFileId);
+    await Meal.findByIdAndUpdate(mealDoc._id, {
+      $unset: { vectorFileId: "" },
+    });
+
+    console.log("파일 제거", mealDoc.vectorFileId);
+    await openai.files.delete(mealDoc.vectorFileId).then((res) => {
+      console.log("파일 제거 완료", res);
+    });
+
+    const userVectorStoreId = await getUserVectorStoreId(mealDoc.userId);
+    await openai.vectorStores.fileBatches.delete(userVectorStoreId, {
+      file_ids: [mealDoc.vectorFileId],
+    });
   } catch (error) {
     console.error("removeMeal error:", error);
   }
