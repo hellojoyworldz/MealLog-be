@@ -1,6 +1,30 @@
 import OpenAI from "openai";
 import openai from "../utils/openai.js";
 
+export async function getUserVectorStoreId(userId) {
+  try {
+    const vectorStores = await openai.vectorStores.list();
+
+    if (vectorStores && vectorStores.data) {
+      const userVectorStore = vectorStores.data.find(
+        (vs) => vs.name === `meal-log-user-${userId}`
+      );
+
+      if (userVectorStore) {
+        return userVectorStore.id;
+      }
+    }
+
+    const newVectorStore = await openai.vectorStores.create({
+      name: `meal-log-user-${userId}`,
+    });
+
+    return newVectorStore.id;
+  } catch (error) {
+    console.error("getUserVectorStoreId error:", error);
+  }
+}
+
 function formatMealToText(meal) {
   const foods = meal.foods.map(
     (f) =>
@@ -17,33 +41,36 @@ function formatMealToText(meal) {
 }
 
 export async function upsertMeal(mealDoc) {
+  const userVectorStoreId = await getUserVectorStoreId(mealDoc.userId);
+
   try {
     // 파일이 존재하면 제거
     if (mealDoc.vectorFileId) {
       try {
-        await openai.files.del(mealDoc.vectorFileId);
+        console.log("파일 제거 시도");
+        await openai.files.delete(mealDoc.vectorFileId);
       } catch (error) {
-        console.error("previous file remove error:", error);
+        console.error("파일 제거 실패:", error);
       }
     }
 
-    // 파일 생성
+    // 파일 생성 - 파일명에 사용자 정보 포함
     const text = formatMealToText(mealDoc);
     const file = await openai.files.create({
       file: await OpenAI.toFile(
         Buffer.from(text, "utf-8"),
-        `meal-${mealDoc._id}.txt`
+        `meal-${mealDoc._id}-userId-${mealDoc.userId}-${
+          mealDoc.date.toISOString().split("T")[0]
+        }.txt`
       ),
       purpose: "assistants",
     });
 
     // 백스토어에 파일 업로드
-    await openai.vectorStores.fileBatches.createAndPoll(
-      process.env.VECTOR_STORE_ID,
-      {
-        file_ids: [file.id],
-      }
-    );
+    await openai.vectorStores.fileBatches.createAndPoll(userVectorStoreId, {
+      file_ids: [file.id],
+    });
+    console.log("파일 업로드 완료");
 
     // 파일 ID 저장
     mealDoc.vectorFileId = file.id;
@@ -57,7 +84,7 @@ export async function removeMeal(mealDoc) {
   if (!mealDoc.vectorFileId) return;
 
   try {
-    await openai.files.del(mealDoc.vectorFileId);
+    await openai.files.delete(mealDoc.vectorFileId);
   } catch (error) {
     console.error("removeMeal error:", error);
   }
