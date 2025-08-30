@@ -1,4 +1,5 @@
 import openai from "../utils/openai.js";
+import { getUserVectorStoreId } from "./vectorStore.service.js";
 
 const aiService = {};
 
@@ -56,10 +57,13 @@ ${JSON.stringify(payload)}
 aiService.getChatResponse = async ({
   message,
   chatHistory,
+  userId,
   userName,
   goals,
   months = 3,
 }) => {
+  const userVectorStoreId = await getUserVectorStoreId(userId);
+
   const prompt = `당신은 전문 영양사입니다. 유저의 최근 ${months}개월간의 식단 데이터 위주로 참고하여 상담을 진행합니다.
   중요한 규칙:
   1. 실용적인 조언을 간단하게 제공하세요
@@ -93,9 +97,7 @@ aiService.getChatResponse = async ({
   return await openai.responses.stream({
     model: "gpt-4.1-mini",
     input: messages,
-    tools: [
-      { type: "file_search", vector_store_ids: [process.env.VECTOR_STORE_ID] },
-    ],
+    tools: [{ type: "file_search", vector_store_ids: [userVectorStoreId] }],
   });
 };
 
