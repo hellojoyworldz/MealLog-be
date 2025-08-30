@@ -181,29 +181,15 @@ mealController.updateMeal = async (req, res) => {
 mealController.deleteMeal = async (req, res) => {
   try {
     const { userId } = req;
-    const { mealId, foodId } = req.query;
+    const { mealId } = req.params;
 
     const meal = await Meal.findOne({ _id: mealId, userId });
     if (!meal) {
       return res.status(404).json({ status: "fail", error: "Meal not found" });
     }
 
-    if (foodId) {
-      // foodId가 있으면 meal의 food 하나만 삭제
-      const food = meal.foods.id(foodId);
-      if (!food) {
-        return res
-          .status(404)
-          .json({ status: "fail", error: "Food not found" });
-      }
-      food.deleteOne();
-      await meal.save();
-      await upsertMeal(meal);
-
-      return res.status(200).json({ status: "success", data: meal });
-    } else {
+    if (mealId) {
       await removeMeal(meal);
-      // foodId 없으면 meal 전체 삭제
       await Meal.deleteOne({ _id: mealId, userId });
       return res
         .status(200)
